@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">jacoPerception</string>
+    <string name="menu_title">Menu</string>
+    <string name="status">Status</string>
+    <string name="button_train">Train</string>
+    <string name="button_go">Take It</string>
+    <string name="grasp">Grasp</string>
+
+</resources>
