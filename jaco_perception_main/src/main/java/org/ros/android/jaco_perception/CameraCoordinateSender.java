@@ -23,12 +23,12 @@ public class CameraCoordinateSender extends AbstractNodeMain {
 
 	@Override
 	public GraphName getDefaultNodeName() {
-		return GraphName.of("/coordinate_sender");
+		return GraphName.of("/android_ros_sender");
 	}
 
 	@Override
 	public void onStart(ConnectedNode connectedNode){
-		publisher = connectedNode.newPublisher("/image_coordinate_rgb", String._TYPE);
+		publisher = connectedNode.newPublisher("/android_sender", String._TYPE);
 		/*
 		connectedNode.executeCancellableLoop(new CancellableLoop() {
 			@Override
@@ -50,10 +50,23 @@ public class CameraCoordinateSender extends AbstractNodeMain {
 	{
         string = publisher.newMessage();
 		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("c_");
 		stringBuilder.append(java.lang.String.valueOf(p_array[0]));
 		stringBuilder.append('_');
 		stringBuilder.append(java.lang.String.valueOf(p_array[1]));
 		string.setData(stringBuilder.toString());
+		publisher.publish(string);
+	}
+
+	public void sendCloseMenu(){
+		string = publisher.newMessage();
+		string.setData("menu_close");
+		publisher.publish(string);
+	}
+
+	public void sendMessage(java.lang.String p_string){
+		string = publisher.newMessage();
+		string.setData(p_string);
 		publisher.publish(string);
 	}
 

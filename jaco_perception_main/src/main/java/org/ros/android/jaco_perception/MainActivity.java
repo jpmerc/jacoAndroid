@@ -58,9 +58,10 @@ public class MainActivity extends RosActivity {
 	private RosListener rosListener;
 	public CameraCoordinateSender cameraCoordinateSender;
 	public RosImageView<CompressedImage> image;
-	public RosCommunication rosCommunication;
 	private float ratio_touched_x;
 	private float ratio_touched_y;
+	private int imageWidthProportion;
+	private int imageHeightProportion;
 	private int border;
 	private boolean isMenuUp = false;
 	private boolean allMessageReceived = false;
@@ -91,14 +92,12 @@ public class MainActivity extends RosActivity {
 	protected void init(NodeMainExecutor nodeMainExecutor) {
 		rosListener = new RosListener();
 		cameraCoordinateSender = new CameraCoordinateSender();
-		rosCommunication = new RosCommunication();
 		String hostLocal = InetAddressFactory.newNonLoopback().getHostAddress();
-		String hostMaster = "132.203.241.178";
+		String hostMaster = "132.203.241.193";
 		URI uri = URI.create("http://" + hostMaster + ":" + "11311");
-		NodeConfiguration nodeConfiguration = NodeConfiguration.newPublic("132.203.241.193",uri);
+		NodeConfiguration nodeConfiguration = NodeConfiguration.newPublic("132.203.241.208",uri);
 		nodeMainExecutor.execute(image, nodeConfiguration);
 		nodeMainExecutor.execute(cameraCoordinateSender, nodeConfiguration);
-		nodeMainExecutor.execute(rosCommunication, nodeConfiguration);
 		nodeMainExecutor.execute(rosListener, nodeConfiguration);
 	}
 
@@ -110,8 +109,8 @@ public class MainActivity extends RosActivity {
 		int imageWidth = image.getWidth();
 		int imageHeight = image.getHeight();
 		int bottomImage;
-		int imageWidthProportion = (4 * imageHeight) / 3;
-		int imageHeightProportion = (3 * imageWidth) / 4;
+		imageWidthProportion = (4 * imageHeight) / 3;
+		imageHeightProportion = (3 * imageWidth) / 4;
 		if(imageHeight >= imageHeightProportion){
 			//image have been resize to fit the width
 			//the borders are at the top and the bottom
@@ -142,20 +141,28 @@ public class MainActivity extends RosActivity {
 			image.getLocationOnScreen(coords);
 			int absoluteTop = coords[1];
 			if(isInImage(x,y)) {
-				float absoluteY = y - border - absoluteTop;
-				int windows_x_size = image.getWidth();
-				int windows_y_size = image.getHeight() - 2*border;
-				ratio_touched_x = x / windows_x_size;
-				ratio_touched_y = absoluteY / windows_y_size;
-				float[] send_array_temp = new float[2];
-				send_array_temp[0] = ratio_touched_x;
-				send_array_temp[1] = ratio_touched_y;
-				cameraCoordinateSender.send_coordinate(send_array_temp);
-				while(!allMessageReceived){
-					allMessageReceived = rosListener.getAllMessagesReceived();
+				//fit for horizontal image
+				if(!isMenuUp) {
+					float absoluteY = y - absoluteTop;
+					float absoluteX = x - border;
+					int windows_x_size = image.getWidth();
+					int windows_y_size = image.getHeight();
+					ratio_touched_x = absoluteX / imageWidthProportion;
+					ratio_touched_y = absoluteY / windows_y_size;
+					float[] send_array_temp = new float[2];
+					send_array_temp[0] = ratio_touched_x;
+					send_array_temp[1] = ratio_touched_y;
+					cameraCoordinateSender.send_coordinate(send_array_temp);
+					while (!allMessageReceived) {
+						allMessageReceived = rosListener.getAllMessagesReceived();
+					}
 				}
-				insertMenu();
+				else
+				{
+					cameraCoordinateSender.sendCloseMenu();
+				}
 			}
+			insertMenu();
 		}
 		return true;
 	}
@@ -210,7 +217,7 @@ public class MainActivity extends RosActivity {
 		public void onClick(View view) {
 
 			String sendMessage = new String("t_train");
-			rosCommunication.sendMessage(sendMessage);
+			cameraCoordinateSender.sendMessage(sendMessage);
 
 		}
 	};
@@ -220,7 +227,10 @@ public class MainActivity extends RosActivity {
 		public void onClick(View view) {
 
 			String sendMessage = new String("g_take_it");
-			rosCommunication.sendMessage(graspSelected);
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("g_");
+			stringBuilder.append(graspSelected);
+			cameraCoordinateSender.sendMessage(stringBuilder.toString());
 		}
 	};
 
